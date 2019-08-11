@@ -4,14 +4,20 @@ import (
 	"sync"
 )
 
+// Task represents an in-process Goroutine task.
 type Task interface {
+	// Run method corresponds to Run method of Java's Runnable interface.
 	Run()
 }
 
+// Executor defines the actions associated with the Goroutine pool.
 type Executor interface {
+	// Execute method corresponds to Execute method of Java's ExecutorService interface.
 	Execute(task Task)
-	Shutdown()
-	Wait() chan struct{}
+	// Wait waits for all the tasks to complete.
+	Wait()
+	// Done returns a channel which is closed if all the tasks completed.
+	Done() chan struct{}
 }
 
 type executor struct {
@@ -19,19 +25,19 @@ type executor struct {
 	waitingTasks     []chan struct{}
 	activeTasks      int64
 	concurrencyLimit int64
-	finish           chan struct{}
+	done           chan struct{}
 }
 
 func (ex *executor) Execute(task Task) {
 	ex.start(task)
 }
 
-func (ex *executor) Wait() chan struct{} {
-	return ex.finish
+func (ex *executor) Wait() {
+	<-ex.done
 }
 
-func (ex *executor) Shutdown() {
-	<-ex.finish
+func (ex *executor) Done() chan struct{} {
+	return ex.done
 }
 
 func (ex *executor) start(task Task) {
@@ -44,12 +50,13 @@ func (ex *executor) start(task Task) {
 
 }
 
+// NewExecutor returns a new Executor.
 func NewExecutor(concurrencyLimit int64) Executor {
 	ex := &executor{
 		waitingTasks:     make([]chan struct{}, 0),
 		activeTasks:      0,
 		concurrencyLimit: concurrencyLimit,
-		finish:           make(chan struct{}),
+		done:           make(chan struct{}),
 	}
 	return ex
 }
@@ -82,7 +89,7 @@ func (ex *executor) waitDone(stopCh chan struct{}) {
 	if len(ex.waitingTasks) == 0 {
 		ex.activeTasks--
 		if ex.activeTasks == 0 {
-			close(ex.finish)
+			close(ex.done)
 		}
 	} else {
 		close(ex.waitingTasks[0])

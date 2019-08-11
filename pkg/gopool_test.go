@@ -36,5 +36,5 @@ func TestNewExecutor(t *testing.T) {
 			fmt.Sprintf("ping %s -c 10", domain),
 		})
 	}
-	ex.Shutdown()
+	ex.Wait()
 }
