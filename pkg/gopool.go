@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"log"
 	"sync"
 )
 
@@ -65,6 +66,7 @@ func startTask(startCh, stopCh chan struct{}, task Task) {
 	defer close(stopCh)
 
 	<-startCh
+	log.Printf("task: %p is running", startCh)
 	task.Run()
 }
 
@@ -73,9 +75,11 @@ func (ex *executor) enqueue(startCh chan struct{}) {
 	defer ex.lock.Unlock()
 
 	if ex.concurrencyLimit == 0 || ex.activeTasks < ex.concurrencyLimit {
+		log.Printf("Task: %p start executing", startCh)
 		close(startCh)
 		ex.activeTasks++
 	} else {
+		log.Printf("Task: %p start waitting", startCh)
 		ex.waitingTasks = append(ex.waitingTasks, startCh)
 	}
 }

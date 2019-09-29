@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 	"os/exec"
-	"regexp"
+	"strings"
 	"time"
 )
 
@@ -14,25 +14,12 @@ func Stdout(cmd *exec.Cmd) error {
 		return err
 	}
 
-	log.Print("Exec command stdout\n" + string(output))
+	log.Printf("Exec command stdout\n%s", string(output))
 	return nil
 }
 
-func RegSplit(text string, delimeter string) []string {
-	reg := regexp.MustCompile(delimeter)
-	indexes := reg.FindAllStringIndex(text, -1)
-	lastStart := 0
-	result := make([]string, len(indexes)+1)
-	for i, element := range indexes {
-		result[i] = text[lastStart:element[0]]
-		lastStart = element[1]
-	}
-	result[len(indexes)] = text[lastStart:]
-	return result
-}
-
 func Exec(cmdStr string) {
-	argv := RegSplit(cmdStr, "\\s+")
+	argv := strings.Fields(cmdStr)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(10)*time.Second)
 	defer cancel()
